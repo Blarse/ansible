@@ -1,0 +1,8 @@
+[cluster]
+rabbit1 ansible_host=<ip> ansible_user=root
+rabbit2 ansible_host=<ip> ansible_user=root
+rabbit3 ansible_host=<ip> ansible_user=root
+
+[cluster:vars]
+master_node=rabbit1
+rabbitmq_plugins=rabbitmq_managment

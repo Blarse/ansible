@@ -1,0 +1,12 @@
+#!/bin/sh -efu
+
+CLUSTER_WITH={{master_node}}
+
+rabbitmqctl cluster_status | grep -q "rabbit@$CLUSTER_WITH" && exit 0
+
+if [ "$CLUSTER_WITH" != "{{inventory_hostname}}" ]; then
+    rabbitmqctl stop_app
+    rabbitmqctl reset
+    rabbitmqctl join_cluster "rabbit@$CLUSTER_WITH"
+    rabbitmqctl start_app
+fi

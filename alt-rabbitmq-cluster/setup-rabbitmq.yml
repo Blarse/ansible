@@ -1,0 +1,72 @@
+---
+
+- hosts: cluster
+  remote_user: root
+  tasks:
+
+  - name: set hostname
+    hostname:
+      name: '{{inventory_hostname}}'
+    register: hostname_reg
+
+  - name: Add IP address of all hosts to all hosts
+    lineinfile:
+      dest: /etc/hosts
+      regexp: '.*{{ item }}$'
+      line: "{{ hostvars[item].ansible_host }} {{item}}"
+      state: present
+    when: hostvars[item].ansible_host is defined
+    with_items: "{{ groups.all }}"
+    register: hosts_reg
+    
+  - name: reboot if needed
+    reboot:
+      msg: "Reboot after hostname change"
+    when: hostname_reg.changed or hosts_reg.changed
+    
+  - name: install rabbitmq
+    apt_rpm:
+      name:
+        - rabbitmq-server
+      state: present
+      update_cache: yes
+      
+  - name: create erlang cookie on host
+    delegate_to: localhost
+    run_once: true
+    shell:
+      cmd: ./gen-cookie.sh
+      creates: ./erlang.cookie
+      
+  - name: copy erlang cookie
+    copy:
+      src: ./erlang.cookie
+      dest: /var/lib/rabbitmq/.erlang.cookie
+      owner: 'rabbitmq'
+      group: 'rabbitmq'
+      mode: '400'
+
+  - name: Enables the rabbitmq_management plugin
+    community.rabbitmq.rabbitmq_plugin:
+      names: rabbitmq_management
+      state: enabled
+
+  - name: enable and restart rabbitmq
+    service:
+      name: 'rabbitmq'
+      state: restarted
+      enabled: yes
+  
+  - name: create join_cluster script from a template
+    template:
+      src: ./join_cluster.sh.j2
+      dest: ./join_cluster.sh
+      mode: '755'
+
+  - name: create cluster
+    shell:
+      cmd: ./join_cluster.sh
+    register: command_output
+
+  - debug:
+      var: command_output.stdout_lines
