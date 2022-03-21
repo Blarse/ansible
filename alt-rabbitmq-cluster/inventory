@@ -4,5 +4,7 @@ rabbit2 ansible_host=<ip> ansible_user=root
 rabbit3 ansible_host=<ip> ansible_user=root
 
 [cluster:vars]
+vip=<ip>
 master_node=rabbit1
 rabbitmq_plugins=rabbitmq_managment
+keepalived_password=change_me

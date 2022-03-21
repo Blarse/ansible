@@ -1,0 +1,29 @@
+global
+    maxconn 50000
+    user haproxy
+    group haproxy
+
+defaults
+    mode tcp
+
+listen rabbitmq
+    bind {{vip}}:5672
+    mode tcp
+    balance roundrobin
+    timeout client 5s
+    timeout connect 100ms
+    timeout server 5s
+{% for item in groups.all %}
+    server {{item}} {{hostvars[item].ansible_host}}
+{% endfor %}
+
+listen rabbitmq_management
+    bind {{vip}}:443
+    mode tcp
+    balance roundrobin
+    timeout client 35s
+    timeout connect 100ms
+    timeout server 35s
+{% for item in groups.all %}
+    server {{item}} {{hostvars[item].ansible_host}}:15672
+{% endfor %}
